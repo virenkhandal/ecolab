@@ -135,4 +135,5 @@ def map_value(my_slider, dropdown):
 
 
 ### Run
-app.run_server(debug=True)
+if __name__ == '__main__':
+    app.run_server(debug=True)
