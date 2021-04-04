@@ -39,6 +39,7 @@ frames = [ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen]
 
 
 
+
 newdf = pd.concat(frames)
 
 newdf = newdf.rename(columns={"year": "YEAR", "Geo_NAME":"Geo_NAME", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
@@ -77,8 +78,8 @@ app.layout = html.Div([
         id='dropdown',
         options=[
             {'label': 'Degree', 'value': 'DEGREE'},
-            {'label': 'Average Income', 'value': 'AVGINCOME'},
-            {'label': 'Median Income', 'value': 'MEDINCOME'},
+            # {'label': 'Average Income', 'value': 'AVGINCOME'},
+            # {'label': 'Median Income', 'value': 'MEDINCOME'},
             {'label': 'Rooms per Household', 'value': 'ROOMS'},
             {'label': 'Home Ownership', 'value': 'OWN'},
             {'label': 'Vehicle Ownership', 'value': 'VEHICLES'}
@@ -106,7 +107,6 @@ app.layout = html.Div([
 )
 
 def map_value(my_slider, dropdown):
-
     container = "You are currently viewing the map for : {}".format(my_slider)
     container_two = "You are currently mapping : {}".format(dropdown)
     year = my_slider
@@ -121,7 +121,7 @@ def map_value(my_slider, dropdown):
         locations=currdf["GEOID"],
         scope="usa",
         color=variable,
-        hover_data=['YEAR', variable, 'OWN'],
+        hover_data=['YEAR', variable],
         color_continuous_scale="Viridis",
         labels={str(variable): variable},
         range_color = [min_value, max_value]
