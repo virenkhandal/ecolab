@@ -42,7 +42,7 @@ frames = [ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen]
 
 newdf = pd.concat(frames)
 
-newdf = newdf.rename(columns={"year": "YEAR", "Geo_NAME":"Geo_NAME", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
+newdf = newdf.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
 newdf['GEOID'] = newdf['GEOID'].astype(str)
 
 finaldf = county_geo_org.merge(newdf, on=['GEOID'])
@@ -121,7 +121,7 @@ def map_value(my_slider, dropdown):
         locations=currdf["GEOID"],
         scope="usa",
         color=variable,
-        hover_data=['YEAR', variable],
+        hover_data=['County Name', 'YEAR', variable],
         color_continuous_scale="Viridis",
         labels={str(variable): variable},
         range_color = [min_value, max_value]
