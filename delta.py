@@ -132,10 +132,12 @@ def map_value(my_slider, dropdown):
     finaldf = load_data()
     counties = load_counties()
     currdf = finaldf[finaldf['YEAR'] == year]
+    placeholder = finaldf[finaldf['YEAR'] == 2010]
+    currdf[variable] = currdf[variable].values - placeholder[variable].values
     # print(currdf[variable])
     currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
-    min_value = finaldf[variable].min()
-    max_value = finaldf[variable].max()
+    min_value = currdf[variable].min()
+    max_value = currdf[variable].max()
     fig = px.choropleth(
         data_frame=currdf,
         geojson=counties,
@@ -143,7 +145,7 @@ def map_value(my_slider, dropdown):
         scope="usa",
         color=variable,
         hover_data=['County Name', 'YEAR', variable],
-        color_continuous_scale="Viridis",
+        color_continuous_scale="RdYlGn",
         labels={str(variable): variable},
         range_color = [min_value, max_value]
     )
