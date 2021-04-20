@@ -133,7 +133,7 @@ def map_value(my_slider, dropdown):
     counties = load_counties()
     currdf = finaldf[finaldf['YEAR'] == year]
     placeholder = finaldf[finaldf['YEAR'] == 2010]
-    currdf[variable] = currdf[variable].values - placeholder[variable].values
+    currdf[variable] = currdf[variable].values / placeholder[variable].values
     # print(currdf[variable])
     currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
     min_value = currdf[variable].min()
