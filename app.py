@@ -12,23 +12,24 @@ from urllib.request import urlopen
 import dash_html_components as html
 import dash_core_components as dcc
 from dash.dependencies import Input, Output
+import dash_bootstrap_components as dbc
 
 from flask_caching import Cache
 
 import warnings
 warnings.filterwarnings('ignore')
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'cache-directory'
 })
-server = app.server
 TIMEOUT = 60
+@cache.memoize(timeout=TIMEOUT)
 def load_counties():
     with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
         counties = json.load(response)
         return counties
-
+        
 @cache.memoize(timeout=TIMEOUT)
 def load_data():
     client = boto3.client('s3')
@@ -69,10 +70,66 @@ def load_data():
     finaldf['GEOID'] = finaldf['GEOID'].replace("2158", "2270")
     return finaldf
 
+# styling the sidebar
+SIDEBAR_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "16rem",
+    "padding": "2rem 1rem",
+    "background-color": "#D6E7FF",
+}
+
+# padding for the page content
+CONTENT_STYLE = {
+    "margin-left": "8.5rem",
+    "margin-right": "4rem",
+    "width":"160vh",
+    "margin-top":"20px"
+    # "padding": "2rem 1rem",
+}
+SLIDER_STYLE = {
+    "margin-left": "16rem",
+    # "margin-right": "2rem",
+    # "padding-left": "9rem",
+    "margin-top": "50px",
+    "width":"160vh"
+}
+MAP_STYLE = {
+    "margin-left": "12rem",
+    # "margin-right": "4rem",
+    # "padding-left": "2rem",
+    "width":"170vh",
+    "height":"100vh",
+    "padding-top":"-100px",
+    "margin-top":"-20px"
+}
+sidebar = html.Div(
+    [
+        html.H2("EcoDataLab", className="display-6"),
+        html.Hr(),
+        # html.P(
+        #     "Improving the carbon footprint one map at a time", className="lead"
+        # ),
+        dbc.Nav(
+            [
+                dbc.NavLink("Home", href="/", active="exact"),
+                dbc.NavLink("Change Over Time", href="/delta", active="exact"),
+                # dbc.NavLink("Page 2", href="/page-2", active="exact"),
+            ],
+            vertical=True,
+            pills=True,
+        ),
+    ],
+    style=SIDEBAR_STYLE,
+)
+
+content = html.Div(id="page-content", children=[], style=CONTENT_STYLE)
+
 app.layout = html.Div([
-
-    html.H1("EcoDataLab Maps", style={'text-align': 'center', 'margin-bottom': 10}),
-
+    dcc.Location(id="url"),
+    html.Div(style=SLIDER_STYLE, children=[
     dcc.Slider(
         id='my_slider',
         min=2010,
@@ -89,8 +146,8 @@ app.layout = html.Div([
         2016: '2016',
         2017: '2017'
         },
-        included=False
-    ),
+        included=False,
+    )]),
 
     dcc.Dropdown(
         id='dropdown',
@@ -103,58 +160,94 @@ app.layout = html.Div([
             {'label': 'Vehicle Ownership', 'value': 'VEHICLES'}
         ],
         value='DEGREE',
-        placeholder="Select a variable to display on the map"
+        placeholder="Select a variable to display on the map",
+        style=CONTENT_STYLE
     ),
 
-    html.Div(id='output_container', children=[]),
-    html.Div(id='output_container_two', children=[]),
+    # html.Div(id='output_container', children=[], style=CONTENT_STYLE),
+    # html.Div(id='output_container_two', children=[], style=CONTENT_STYLE),
     html.Br(),
 
-    dcc.Graph(id='map', figure={}, style={'height': '100vh'})
-
+    dcc.Graph(id='map', figure={}, style=MAP_STYLE),
+    sidebar
 ])
 
 
-### Callback
 @app.callback(
-    [Output(component_id='output_container', component_property='children'),
-     Output(component_id='output_container_two', component_property='children'),
-     Output(component_id='map', component_property='figure')],
-    [Input(component_id='my_slider', component_property='value'),
+    Output(component_id='map', component_property='figure'),
+    [Input("url", "pathname"),
+     Input(component_id='my_slider', component_property='value'),
      Input(component_id='dropdown', component_property='value')]
 )
-
-def map_value(my_slider, dropdown):
-    container = "You are currently viewing the map for : {}".format(my_slider)
-    container_two = "You are currently mapping : {}".format(dropdown)
+def render_page_content(pathname, my_slider, dropdown):
     year = my_slider
     variable = dropdown
     finaldf = load_data()
     counties = load_counties()
-    currdf = finaldf[finaldf['YEAR'] == year]
-    # print(currdf[variable])
-    currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
-    min_value = finaldf[variable].min()
-    max_value = finaldf[variable].max()
-    fig = px.choropleth(
-        data_frame=currdf,
-        geojson=counties,
-        locations=currdf["GEOID"],
-        scope="usa",
-        color=variable,
-        hover_data=['County Name', 'YEAR', variable],
-        color_continuous_scale="Viridis",
-        labels={str(variable): variable},
-        range_color = [min_value, max_value]
+    if pathname == "/":
+        currdf = finaldf[finaldf['YEAR'] == year]
+        currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
+        min_value = finaldf[variable].min()
+        max_value = finaldf[variable].max()
+        fig = px.choropleth(
+            data_frame=currdf,
+            geojson=counties,
+            locations=currdf["GEOID"],
+            scope="usa",
+            color=variable,
+            hover_data=['County Name', 'YEAR', variable],
+            color_continuous_scale="Viridis",
+            labels={str(variable): variable},
+            range_color = [min_value, max_value]
+        )
+        fig.update_layout(geo=dict(bgcolor= 'rgba(189, 222, 240, 1)', lakecolor='#BDDEF0'))
+        fig.update_traces(marker_line_width=0)
+        fig.update_geos(
+            visible=False, resolution=110, scope="usa"
+        )   
+        return fig
+    elif pathname == "/delta":
+        currdf = finaldf[finaldf['YEAR'] == year]
+        placeholder = finaldf[finaldf['YEAR'] == 2010]
+        currdf[variable] = currdf[variable].values / placeholder[variable].values
+        currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
+        min_value = currdf[variable].min()
+        max_value = currdf[variable].max()
+        fig = px.choropleth(
+            data_frame=currdf,
+            geojson=counties,
+            locations=currdf["GEOID"],
+            scope="usa",
+            color=variable,
+            hover_data=['County Name', 'YEAR', variable],
+            color_continuous_scale="RdYlGn",
+            labels={str(variable): variable},
+            range_color = [min_value, max_value]
+        )
+        fig.update_layout(geo=dict(bgcolor= 'rgba(189, 222, 240, 1)', lakecolor='#BDDEF0'))
+        fig.update_traces(marker_line_width=0)
+        fig.update_geos(
+            visible=False, resolution=110, scope="usa"
+        )   
+        return fig
+    # elif pathname == "/page-2":
+    #     return [
+    #             html.H1('High School in Iran',
+    #                     style={'textAlign':'center'}),
+    #             dcc.Graph(id='bargraph',
+    #                      figure=px.bar(df, barmode='group', x='Years',
+    #                      y=['Girls High School', 'Boys High School']))
+    #             ]
+    # If the user tries to reach a different page, return a 404 message
+    return dbc.Jumbotron(
+        [
+            html.H1("404: Not found", className="text-danger"),
+            html.Hr(),
+            html.P(f"The pathname {pathname} was not recognised..."),
+        ]
     )
-    fig.update_layout(geo=dict(bgcolor= 'rgba(189, 222, 240, 1)', lakecolor='#BDDEF0'))
-    fig.update_traces(marker_line_width=0)
-    fig.update_geos(
-        visible=False, resolution=110, scope="usa"
-    )   
-    return container, container_two, fig
 
 
-### Run
+# ### Run
 if __name__ == '__main__':
     app.run_server(debug=True)
