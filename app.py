@@ -152,6 +152,17 @@ sidebar = html.Div(
             vertical=True,
             pills=True
         ),
+        dcc.Markdown(children=
+            '''
+                __**Glossary**__\n
+                **Total Carbon Footprint**: Carbon Footprint estimation based on consumer expenditure and consumption\n
+                **Degree**: Average number of degrees attained\n
+                **Rooms per Household**: Average number of rooms per household\n
+                **Home Ownership**: Average number of homes owned\n
+                **Vehicle Ownership**: Average number of vehicles owned\n
+            ''',
+            style={"font-size":"12px", "margin-top":"40px"}
+        ),
         html.H6("Created by Viren Khandal", className="display-9", style={"font-family":"Candara", "font-size":"10px", "text-align":"center", "margin-left":"auto", "margin-right":"auto", "left":"0", "right":"0", "position":"absolute", "bottom":"0"})
     ],
     style=SIDEBAR_STYLE
