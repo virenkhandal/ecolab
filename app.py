@@ -37,7 +37,6 @@ def load_counties():
 def load_data(year):
     client = boto3.client('s3')
     
-
     ### Data: Use old ipynb from ecl
     county_geo = pd.read_csv('tl_2017_us_county.csv')
     county_geo = county_geo[['GEOID']]
@@ -51,7 +50,7 @@ def load_data(year):
     path_name = "counties5year" + str(year) + "clean.csv"
     df = pd.read_csv(path+path_name)
 
-    newdf = df.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
+    newdf = df.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "TOTAL":"TOTAL", "Geo_FIPS":"GEOID"})
     newdf['GEOID'] = newdf['GEOID'].astype(str)
 
     finaldf = county_geo_org.merge(newdf, on=['GEOID'])
@@ -93,7 +92,7 @@ def load_placeholder():
 
     # newdf = pd.concat(frames)
 
-    newdf = df.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
+    newdf = df.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "TOTAL":"TOTAL", "Geo_FIPS":"GEOID"})
     newdf['GEOID'] = newdf['GEOID'].astype(str)
 
     finaldf = county_geo_org.merge(newdf, on=['GEOID'])
@@ -113,7 +112,6 @@ SIDEBAR_STYLE = {
     "padding": "2rem 1rem",
     "background-color": "#D6E7FF",
 }
-
 # padding for the page content
 CONTENT_STYLE = {
     "margin-left": "8.5rem",
@@ -140,7 +138,7 @@ MAP_STYLE = {
 }
 sidebar = html.Div(
     [
-        html.H2("EcoDataLab", className="display-6", style={"font-family":"Candara"}),
+        html.H2("EcoDataLab", className="display-6", style={"font-family":"Candara", "text-align":"center"}),
         html.Hr(),
         # html.P(
         #     "Improving the carbon footprint one map at a time", className="lead"
@@ -158,8 +156,6 @@ sidebar = html.Div(
     ],
     style=SIDEBAR_STYLE
 )
-
-content = html.Div(id="page-content", children=[], style=CONTENT_STYLE)
 
 app.layout = html.Div([
     dcc.Location(id="url"),
@@ -186,6 +182,7 @@ app.layout = html.Div([
     dcc.Dropdown(
         id='dropdown',
         options=[
+            {'label': 'Total Carbon Footprint', 'value': 'TOTAL'},
             {'label': 'Degree', 'value': 'DEGREE'},
             # {'label': 'Average Income', 'value': 'AVGINCOME'},
             # {'label': 'Median Income', 'value': 'MEDINCOME'},
@@ -193,7 +190,7 @@ app.layout = html.Div([
             {'label': 'Home Ownership', 'value': 'OWN'},
             {'label': 'Vehicle Ownership', 'value': 'VEHICLES'}
         ],
-        value='DEGREE',
+        value='TOTAL',
         placeholder="Select a variable to display on the map",
         style=CONTENT_STYLE
     ),
