@@ -23,13 +23,14 @@ cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'cache-directory'
 })
+server = app.server
 TIMEOUT = 60
 @cache.memoize(timeout=TIMEOUT)
 def load_counties():
     with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
         counties = json.load(response)
         return counties
-        
+
 @cache.memoize(timeout=TIMEOUT)
 def load_data():
     client = boto3.client('s3')
