@@ -11,14 +11,16 @@ import json
 from urllib.request import urlopen
 import dash_html_components as html
 import dash_core_components as dcc
-from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-
+from dash.dependencies import Input, Output, State, ClientsideFunction
+from dash_extensions.callback import CallbackCache
 from flask_caching import Cache
-
+from flask_caching.backends import FileSystemCache
 import warnings
 warnings.filterwarnings('ignore')
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+cc = CallbackCache()
+
 cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'cache-directory'
@@ -32,7 +34,7 @@ def load_counties():
         return counties
 
 @cache.memoize(timeout=TIMEOUT)
-def load_data():
+def load_data(year):
     client = boto3.client('s3')
     
 
@@ -46,22 +48,52 @@ def load_data():
 
 
     path = "s3://ecodatalab/data/"
-    ten = pd.read_csv( path + 'counties5year2010clean.csv'); ten.insert(0, 'year', 2010)
-    eleven = pd.read_csv(path + 'counties5year2011clean.csv'); eleven.insert(0, 'year', 2011)
-    twelve = pd.read_csv(path + 'counties5year2012clean.csv'); twelve.insert(0, 'year', 2012)
-    thirteen = pd.read_csv(path + 'counties5year2013clean.csv'); thirteen.insert(0, 'year', 2013)
-    fourteen = pd.read_csv(path + 'counties5year2014clean.csv'); fourteen.insert(0, 'year', 2014)
-    fifteen = pd.read_csv(path + 'counties5year2015clean.csv'); fifteen.insert(0, 'year', 2015)
-    sixteen = pd.read_csv(path + 'counties5year2016clean.csv'); sixteen.insert(0, 'year', 2016)
-    seventeen = pd.read_csv(path + 'counties5year2017clean.csv'); seventeen.insert(0, 'year', 2017)
-    frames = [ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen]
-    # newdf = pd.read_csv(path + 'carbon_data_county.csv')
+    path_name = "counties5year" + str(year) + "clean.csv"
+    df = pd.read_csv(path+path_name)
+
+    newdf = df.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
+    newdf['GEOID'] = newdf['GEOID'].astype(str)
+
+    finaldf = county_geo_org.merge(newdf, on=['GEOID'])
+
+    finaldf['GEOID'] = finaldf['GEOID'].replace("46102", "46113")
+
+    finaldf['GEOID'] = finaldf['GEOID'].replace("2158", "2270")
+    return finaldf
+
+@cache.memoize(timeout=TIMEOUT)
+def load_placeholder():
+    client = boto3.client('s3')
+    
+
+    ### Data: Use old ipynb from ecl
+    county_geo = pd.read_csv('tl_2017_us_county.csv')
+    county_geo = county_geo[['GEOID']]
+    county_geo_org = county_geo.sort_values(by='GEOID')
+    county_geo_org['GEOID'] = county_geo_org['GEOID'].astype('str')
+
+    county_geo_org = county_geo_org.drop([1248, 1460, 81])
+
+
+    path = "s3://ecodatalab/data/"
+    path_name = "counties5year" + str(2010) + "clean.csv"
+    df = pd.read_csv(path+path_name)
+    # ten = pd.read_csv( path + 'counties5year2010clean.csv'); ten.insert(0, 'year', 2010)
+    # eleven = pd.read_csv(path + 'counties5year2011clean.csv'); eleven.insert(0, 'year', 2011)
+    # twelve = pd.read_csv(path + 'counties5year2012clean.csv'); twelve.insert(0, 'year', 2012)
+    # thirteen = pd.read_csv(path + 'counties5year2013clean.csv'); thirteen.insert(0, 'year', 2013)
+    # fourteen = pd.read_csv(path + 'counties5year2014clean.csv'); fourteen.insert(0, 'year', 2014)
+    # fifteen = pd.read_csv(path + 'counties5year2015clean.csv'); fifteen.insert(0, 'year', 2015)
+    # sixteen = pd.read_csv(path + 'counties5year2016clean.csv'); sixteen.insert(0, 'year', 2016)
+    # seventeen = pd.read_csv(path + 'counties5year2017clean.csv'); seventeen.insert(0, 'year', 2017)
+    # frames = [ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen]
+    # # newdf = pd.read_csv(path + 'carbon_data_county.csv')
 
 
 
-    newdf = pd.concat(frames)
+    # newdf = pd.concat(frames)
 
-    newdf = newdf.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
+    newdf = df.rename(columns={"year": "YEAR", "Geo_NAME":"County Name", "DEGREE":"DEGREE", "MEDINCOME":"MEDINCOME", "AVGINCOME":"AVGINCOME", "OWN":"OWN", "SIZE":"SIZE", "ROOMS":"ROOMS", "VEHICLES":"VEHICLES", "Geo_FIPS":"GEOID"})
     newdf['GEOID'] = newdf['GEOID'].astype(str)
 
     finaldf = county_geo_org.merge(newdf, on=['GEOID'])
@@ -120,11 +152,11 @@ sidebar = html.Div(
                 # dbc.NavLink("Page 2", href="/page-2", active="exact"),
             ],
             vertical=True,
-            pills=True,
+            pills=True
         ),
         html.H6("Created by Viren Khandal", className="display-9", style={"font-family":"Candara", "font-size":"10px", "text-align":"center", "margin-left":"auto", "margin-right":"auto", "left":"0", "right":"0", "position":"absolute", "bottom":"0"})
     ],
-    style=SIDEBAR_STYLE,
+    style=SIDEBAR_STYLE
 )
 
 content = html.Div(id="page-content", children=[], style=CONTENT_STYLE)
@@ -148,7 +180,7 @@ app.layout = html.Div([
         2016: '2016',
         2017: '2017'
         },
-        included=False,
+        included=False
     )]),
 
     dcc.Dropdown(
@@ -176,52 +208,50 @@ app.layout = html.Div([
 
 
 @app.callback(
-    Output(component_id='map', component_property='figure'),
+    Output("map", "figure"),
     [Input("url", "pathname"),
      Input(component_id='my_slider', component_property='value'),
      Input(component_id='dropdown', component_property='value')]
 )
+@cache.cached(timeout=50)
 def render_page_content(pathname, my_slider, dropdown):
     year = my_slider
     variable = dropdown
-    finaldf = load_data()
+    finaldf = load_data(year)
     counties = load_counties()
     if pathname == "/":
-        currdf = finaldf[finaldf['YEAR'] == year]
-        currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
+        finaldf['GEOID'] = finaldf['GEOID'].str.zfill(5)
         min_value = finaldf[variable].min()
         max_value = finaldf[variable].max()
         fig = px.choropleth(
-            data_frame=currdf,
+            data_frame=finaldf,
             geojson=counties,
-            locations=currdf["GEOID"],
+            locations=finaldf["GEOID"],
             scope="usa",
             color=variable,
-            hover_data=['County Name', 'YEAR', variable],
+            hover_data=['County Name', variable],
             color_continuous_scale="Viridis",
             labels={str(variable): variable},
             range_color = [min_value, max_value]
         )
         fig.update_layout(geo=dict(bgcolor= 'rgba(189, 222, 240, 1)', lakecolor='#BDDEF0'))
         fig.update_traces(marker_line_width=0)
-        fig.update_geos(
-            visible=False, resolution=110, scope="usa"
-        )   
+        fig.update_geos(visible=False, resolution=110, scope="usa")   
+        # print(fig)
         return fig
     elif pathname == "/delta":
-        currdf = finaldf[finaldf['YEAR'] == year]
-        placeholder = finaldf[finaldf['YEAR'] == 2010]
-        currdf[variable] = currdf[variable].values / placeholder[variable].values
-        currdf['GEOID'] = currdf['GEOID'].str.zfill(5)
-        min_value = currdf[variable].min()
-        max_value = currdf[variable].max()
+        placeholder = load_placeholder()
+        finaldf[variable] = finaldf[variable].values / placeholder[variable].values
+        finaldf['GEOID'] = finaldf['GEOID'].str.zfill(5)
+        min_value = finaldf[variable].min()
+        max_value = finaldf[variable].max()
         fig = px.choropleth(
-            data_frame=currdf,
+            data_frame=finaldf,
             geojson=counties,
-            locations=currdf["GEOID"],
+            locations=finaldf["GEOID"],
             scope="usa",
             color=variable,
-            hover_data=['County Name', 'YEAR', variable],
+            hover_data=['County Name', variable],
             color_continuous_scale="RdYlGn",
             labels={str(variable): variable},
             range_color = [min_value, max_value]
@@ -241,15 +271,15 @@ def render_page_content(pathname, my_slider, dropdown):
     #                      y=['Girls High School', 'Boys High School']))
     #             ]
     # If the user tries to reach a different page, return a 404 message
-    return dbc.Jumbotron(
-        [
-            html.H1("404: Not found", className="text-danger"),
-            html.Hr(),
-            html.P(f"The pathname {pathname} was not recognised..."),
-        ]
-    )
+    # return dbc.Jumbotron(
+    #     [
+    #         html.H1("404: Not found", className="text-danger"),
+    #         html.Hr(),
+    #         html.P(f"The pathname {pathname} was not recognised..."),
+    #     ]
+    # )
 
-
-# ### Run
+cc.register(app)
+### Run
 if __name__ == '__main__':
     app.run_server(debug=True)
