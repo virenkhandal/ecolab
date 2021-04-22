@@ -108,20 +108,21 @@ MAP_STYLE = {
 }
 sidebar = html.Div(
     [
-        html.H2("EcoDataLab", className="display-6"),
+        html.H2("EcoDataLab", className="display-6", style={"font-family":"Candara"}),
         html.Hr(),
         # html.P(
         #     "Improving the carbon footprint one map at a time", className="lead"
         # ),
         dbc.Nav(
             [
-                dbc.NavLink("Home", href="/", active="exact"),
-                dbc.NavLink("Change Over Time", href="/delta", active="exact"),
+                dbc.NavLink("Home", href="/", active="exact", style={"font-family":"Candara"}),
+                dbc.NavLink("Change Over Time", href="/delta", active="exact", style={"font-family":"Candara"}),
                 # dbc.NavLink("Page 2", href="/page-2", active="exact"),
             ],
             vertical=True,
             pills=True,
         ),
+        html.H6("Created by Viren Khandal", className="display-9", style={"font-family":"Candara", "font-size":"10px", "text-align":"center", "margin-left":"auto", "margin-right":"auto", "left":"0", "right":"0", "position":"absolute", "bottom":"0"})
     ],
     style=SIDEBAR_STYLE,
 )
