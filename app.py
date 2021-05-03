@@ -210,7 +210,13 @@ app.layout = html.Div([
     # html.Div(id='output_container_two', children=[], style=CONTENT_STYLE),
     html.Br(),
 
-    dcc.Graph(id='map', figure={}, style=MAP_STYLE),
+    dcc.Loading(
+            id="loading-1",
+            type="cube",
+            color="#3FA155",
+            # fullscreen=True,
+            children=dcc.Graph(id='map', figure={}, style=MAP_STYLE),
+    ),
     sidebar
 ])
 
@@ -220,7 +226,7 @@ app.layout = html.Div([
     [Input("url", "pathname"),
      Input(component_id='my_slider', component_property='value'),
      Input(component_id='dropdown', component_property='value')]
-)
+    )
 @cache.cached(timeout=50)
 def render_page_content(pathname, my_slider, dropdown):
     year = my_slider
