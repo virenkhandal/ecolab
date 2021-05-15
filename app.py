@@ -244,7 +244,7 @@ def render_page_content(pathname, my_slider, dropdown):
             scope="usa",
             color=variable,
             hover_data=['County Name', variable],
-            color_continuous_scale="Viridis",
+            color_continuous_scale="temps",
             labels={str(variable): variable},
             range_color = [min_value, max_value]
         )
